@@ -1,0 +1,109 @@
+---
+title: 'DS202: Lab 4'
+author: "MyTien Kien; kmytien"
+date: "3/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE}
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+defense <-  read_excel('C:\\Users\\kmyti\\OneDrive\\Desktop\\ds202_excel\\cyclonesFootball2020.xlsx', sheet='Defensive')
+offense <-  read_excel('C:\\Users\\kmyti\\OneDrive\\Desktop\\ds202_excel\\cyclonesFootball2020.xlsx', sheet='Offensive')
+bio <-  read_excel('C:\\Users\\kmyti\\OneDrive\\Desktop\\ds202_excel\\cyclonesFootball2020.xlsx', sheet='Biography')
+```
+
+## Part 1: Cleaning
+```{r message=FALSE}
+defClean <- defense %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
+      mutate(across(3:11, as.numeric))
+
+offClean <- offense %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
+      mutate(across(3:12, as.numeric))
+
+bio <- bio %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Weight = as.numeric(Weight))
+
+bioClean <- bio %>%
+      separate(Height, into = c("Ft", "In"), convert = TRUE) %>%
+      mutate(Height = (Ft * 12) + In) %>%
+      select(-c(Ft:In))
+
+str(defClean)
+str(offClean)
+str(bioClean)
+```
+
+//say something
+
+## Part 2: Tidying
+
+**1.** Reformat the offClean data frame into a tidy format using pivot_longer. The type of statistic (Receiving_REC for the number of receivings, Receiving_YDS for receiving yards) is added as a new key column named stat.
+```{r message=FALSE}
+p_one <- offClean %>%
+      pivot_longer(c(3:4), names_to = "Stat", values_to = "Value")
+```
+
+**2.** Show on the distributions of the offensive statistics. The distribution of each offensive statistic should be shown in a separate facet. Explain the patterns you see.
+```{r}
+p_two <- p_one %>% 
+      ggplot(aes(x = Value)) + geom_histogram() + facet_wrap(~Stat, scales = 'free_y')
+
+p_two + ggtitle('Distributions of Offense Stats') + ylab("Count of Receivings/Yards") + xlab("Value")
+```
+
+//say something
+
+**3.** Did ISU have better offense against Oregon or Oklahoma? Answer this question by creating a scatterplot with the x- and y-axes being the receiving yards of the ISU players against these two opponents. A large number of receiving yards indicates good offense.
+```{r}
+
+```
+
+//say something
+
+**4.** Separate the Hometown column into two columns, namely, the city and the state where the player comes from. Print the first few rows of these two columns. (Hint: look at the sep= argument of separate)
+```{r}
+p_four <- bioClean %>%
+      separate(Hometown, into = c('City', 'State'), sep = ',')
+
+head(p_four)
+```
+
+**5.** How many players are there from each state?
+```{r}
+p_five <- p_four %>%
+      group_by(State) %>%
+      summarise(Players = n())
+
+p_five
+```
+
+## Part 3: Joining Data Frames
+**1.** Find which states do the ISU players (both defensive and offensive) come from. Create an appropriate numerical or graphical summary.
+```{r}
+
+```
+
+**2.** How does the performance of quarterback Brock Purdy relate to the performance of the ISU team?
+```{r}
+
+```
+
+**3.** Which ISU player(s) made the biggest progress over the last year? Compare the player-level statistics (i.e. averages and totals for each player) using both the 2020 and the 2019 data here. Choose for yourself the player statistics to investigate.
+```{r}
+
+```
