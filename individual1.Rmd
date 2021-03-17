@@ -24,6 +24,7 @@ bio <-  read_excel('C:\\Users\\kmyti\\OneDrive\\Desktop\\ds202_excel\\cyclonesFo
 
 ## Part 1: Cleaning
 ```{r message=FALSE}
+#Factored and coverted necessary coumns to numeric for Defense and Offense
 defClean <- defense %>%
       mutate(Name = factor(Name)) %>%
       mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
@@ -34,6 +35,7 @@ offClean <- offense %>%
       mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
       mutate(across(3:12, as.numeric))
 
+#For Bio, I converted height into inches, as well as factored Name and turned Weight numeric
 bio <- bio %>%
       mutate(Name = factor(Name)) %>%
       mutate(Weight = as.numeric(Weight))
@@ -43,6 +45,7 @@ bioClean <- bio %>%
       mutate(Height = (Ft * 12) + In) %>%
       select(-c(Ft:In))
 
+#Printing Structures
 str(defClean)
 str(offClean)
 str(bioClean)
@@ -51,7 +54,6 @@ str(bioClean)
 //say something
 
 ## Part 2: Tidying
-
 **1.** Reformat the offClean data frame into a tidy format using pivot_longer. The type of statistic (Receiving_REC for the number of receivings, Receiving_YDS for receiving yards) is added as a new key column named stat.
 ```{r message=FALSE}
 p_one <- offClean %>%
@@ -59,7 +61,8 @@ p_one <- offClean %>%
 ```
 
 **2.** Show on the distributions of the offensive statistics. The distribution of each offensive statistic should be shown in a separate facet. Explain the patterns you see.
-```{r}
+```{r message=FALSE}
+#I'm not sure if they wanted us to show the Offense Stats of what I did for Q1?
 p_two <- p_one %>% 
       ggplot(aes(x = Value)) + geom_histogram() + facet_wrap(~Stat, scales = 'free_y')
 
@@ -68,9 +71,15 @@ p_two + ggtitle('Distributions of Offense Stats') + ylab("Count of Receivings/Ya
 
 //say something
 
-**3.** Did ISU have better offense against Oregon or Oklahoma? Answer this question by creating a scatterplot with the x- and y-axes being the receiving yards of the ISU players against these two opponents. A large number of receiving yards indicates good offense.
+**3.** Did ISU have better offense against Oregon or Oklahoma? Answer this question by creating a scatter plot with the x- and y-axes being the receiving yards of the ISU players against these two opponents. A large number of receiving yards indicates good offense.
 ```{r}
+#I don't think the scatter lot is supposed to look like this but I'll check it again later
+p_three <- p_one %>%
+         select(Opponent_Opponent, Stat, Value) %>%
+         filter(Opponent_Opponent == 'Oklahoma' | Opponent_Opponent == 'Oregon', Stat == 'Receiving_YDS') %>%
+         ggplot(aes(x = Value, y = Opponent_Opponent)) + geom_point()
 
+p_three
 ```
 
 //say something
