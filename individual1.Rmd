@@ -112,7 +112,29 @@ From this, all players on the ISU Football team are from a total of 21 different
 
 **1.** Find which states do the ISU players (both defensive and offensive) come from. Create an appropriate numerical or graphical summary.
 ```{r}
+#Offense
+offState <- offClean %>%
+      distinct(Name) %>%
+      left_join(p_four, by = c("Name" = "Name"))
 
+offState %>%
+      group_by(State) %>% 
+      summarize(Players = n()) %>%
+      ggplot(aes(x = State, weight = Players)) + geom_bar() + coord_flip() +
+      ggtitle("Offense Players and States") + ylab("Number of Offense Players")
+```
+
+```{r}
+#Defense
+defState <- defClean %>%
+      distinct(Name) %>%
+      left_join(p_four, by = c("Name" = "Name"))
+
+defState %>%
+      group_by(State) %>% 
+      summarize(Players = n()) %>%
+      ggplot(aes(x = State, weight = Players)) + geom_bar() + coord_flip() +
+      ggtitle("Defense Players and States") + ylab("Number of Defense Players")
 ```
 
 
