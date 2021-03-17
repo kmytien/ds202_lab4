@@ -24,7 +24,7 @@ bio <-  read_excel('C:\\Users\\kmyti\\OneDrive\\Desktop\\ds202_excel\\cyclonesFo
 
 ## Part 1: Cleaning
 ```{r message=FALSE}
-#Factored and coverted necessary coumns to numeric for Defense and Offense
+#Factored and converted necessary columns to numeric for Defense and Offense
 defClean <- defense %>%
       mutate(Name = factor(Name)) %>%
       mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
@@ -51,46 +51,50 @@ str(offClean)
 str(bioClean)
 ```
 
-//say something
+For defClean & offClean, I converted the Name & Opponent so that it is factored, and everything else is numeric. For bioClean, I factored the Name as well as turned Weight numerical. For The Height in bioClean, I chose to convert the height into inches.
+
 
 ## Part 2: Tidying
 **1.** Reformat the offClean data frame into a tidy format using pivot_longer. The type of statistic (Receiving_REC for the number of receivings, Receiving_YDS for receiving yards) is added as a new key column named stat.
 ```{r message=FALSE}
 p_one <- offClean %>%
-      pivot_longer(c(3:4), names_to = "Stat", values_to = "Value")
+      pivot_longer(c(3:12), names_to = "Stat", values_to = "Value")
 ```
+
 
 **2.** Show on the distributions of the offensive statistics. The distribution of each offensive statistic should be shown in a separate facet. Explain the patterns you see.
 ```{r message=FALSE}
-#I'm not sure if they wanted us to show the Offense Stats of what I did for Q1?
 p_two <- p_one %>% 
-      ggplot(aes(x = Value)) + geom_histogram() + facet_wrap(~Stat, scales = 'free_y')
+      ggplot(aes(x = Value)) + geom_histogram(bins = 10) + facet_wrap(~Stat, scales = 'free_y')
 
-p_two + ggtitle('Distributions of Offense Stats') + ylab("Count of Receivings/Yards") + xlab("Value")
+p_two + ggtitle('Distributions of Offense Stats') + ylab("Count of Specific Offense Stat") + xlab("Value")
 ```
 
 //say something
 
+
 **3.** Did ISU have better offense against Oregon or Oklahoma? Answer this question by creating a scatter plot with the x- and y-axes being the receiving yards of the ISU players against these two opponents. A large number of receiving yards indicates good offense.
-```{r}
-#I don't think the scatter lot is supposed to look like this but I'll check it again later
+```{r message=FALSE}
+#Not sure if I did this correctly
 p_three <- p_one %>%
          select(Opponent_Opponent, Stat, Value) %>%
          filter(Opponent_Opponent == 'Oklahoma' | Opponent_Opponent == 'Oregon', Stat == 'Receiving_YDS') %>%
-         ggplot(aes(x = Value, y = Opponent_Opponent)) + geom_point()
+         ggplot(aes(x = Value, y = Opponent_Opponent, color = Opponent_Opponent)) + geom_point(position = 'jitter')
 
 p_three
 ```
 
-//say something
+From this graph, it looks like Iowa State's Offense did a lot better against Oklahoma than Oregon.
+
 
 **4.** Separate the Hometown column into two columns, namely, the city and the state where the player comes from. Print the first few rows of these two columns. (Hint: look at the sep= argument of separate)
 ```{r}
 p_four <- bioClean %>%
       separate(Hometown, into = c('City', 'State'), sep = ',')
 
-head(p_four)
+head(select(p_four, Name, City, State))
 ```
+
 
 **5.** How many players are there from each state?
 ```{r}
@@ -101,16 +105,22 @@ p_five <- p_four %>%
 p_five
 ```
 
+From this, all players on the ISU Football team are from a total of 21 different states. The most being from Iowa.
+
+
 ## Part 3: Joining Data Frames
+
 **1.** Find which states do the ISU players (both defensive and offensive) come from. Create an appropriate numerical or graphical summary.
 ```{r}
 
 ```
 
+
 **2.** How does the performance of quarterback Brock Purdy relate to the performance of the ISU team?
 ```{r}
 
 ```
+
 
 **3.** Which ISU player(s) made the biggest progress over the last year? Compare the player-level statistics (i.e. averages and totals for each player) using both the 2020 and the 2019 data here. Choose for yourself the player statistics to investigate.
 ```{r}
