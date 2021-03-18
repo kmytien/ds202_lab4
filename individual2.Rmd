@@ -1,0 +1,150 @@
+---
+title: 'DS202: Lab 4'
+author: "MyTien Kien; kmytien, Tanner Dunn; tcdunn"
+date: "3/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE}
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+defense <-  read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2020.xlsx', sheet='Defensive')
+offense <-  read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2020.xlsx', sheet='Offensive')
+bio <-  read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2020.xlsx', sheet='Biography')
+```
+
+## Part 1: Cleaning
+```{r message=FALSE}
+#Factored and converted necessary columns to numeric for Defense and Offense
+defClean <- defense %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
+      mutate(across(3:11, as.numeric))
+
+offClean <- offense %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
+      mutate(across(3:12, as.numeric))
+
+#For Bio, I converted height into inches, as well as factored Name and turned Weight numeric
+bio <- bio %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Weight = as.numeric(Weight))
+
+bioClean <- bio %>%
+      separate(Height, into = c("Ft", "In"), convert = TRUE) %>%
+      mutate(Height = (Ft * 12) + In) %>%
+      select(-c(Ft:In))
+
+#Printing Structures
+str(defClean)
+str(offClean)
+str(bioClean)
+```
+
+For defClean & offClean, I converted the Name & Opponent so that it is factored, and everything else is numeric. For bioClean, I factored the Name as well as turned Weight numerical. For The Height in bioClean, I chose to convert the height into inches.
+
+
+## Part 2: Tidying
+**1.** Reformat the offClean data frame into a tidy format using pivot_longer. The type of statistic (Receiving_REC for the number of receivings, Receiving_YDS for receiving yards) is added as a new key column named stat.
+```{r message=FALSE}
+p_one <- offClean %>%
+      pivot_longer(c(3:12), names_to = "Stat", values_to = "Value")
+```
+
+
+**2.** Show on the distributions of the offensive statistics. The distribution of each offensive statistic should be shown in a separate facet. Explain the patterns you see.
+```{r message=FALSE}
+p_two <- p_one %>% 
+      ggplot(aes(x = Value)) + geom_histogram(bins = 10) + facet_wrap(~Stat, scales = 'free_y')
+
+p_two + ggtitle('Distributions of Offense Stats') + ylab("Count of Specific Offense Stat") + xlab("Value")
+```
+
+//say something
+
+
+**3.** Did ISU have better offense against Oregon or Oklahoma? Answer this question by creating a scatter plot with the x- and y-axes being the receiving yards of the ISU players against these two opponents. A large number of receiving yards indicates good offense.
+```{r message=FALSE}
+#Not sure if I did this correctly
+p_three <- p_one %>%
+         select(Opponent_Opponent, Stat, Value) %>%
+         filter(Opponent_Opponent == 'Oklahoma' | Opponent_Opponent == 'Oregon', Stat == 'Receiving_YDS') %>%
+         ggplot(aes(x = Value, y = Opponent_Opponent, color = Opponent_Opponent)) + geom_point(position = 'jitter')
+
+p_three
+```
+
+From this graph, it looks like Iowa State's Offense did a lot better against Oklahoma than Oregon.
+
+
+**4.** Separate the Hometown column into two columns, namely, the city and the state where the player comes from. Print the first few rows of these two columns. (Hint: look at the sep= argument of separate)
+```{r}
+p_four <- bioClean %>%
+      separate(Hometown, into = c('City', 'State'), sep = ',')
+
+head(select(p_four, Name, City, State))
+```
+
+
+**5.** How many players are there from each state?
+```{r}
+p_five <- p_four %>%
+      group_by(State) %>%
+      summarise(Players = n())
+
+p_five
+```
+
+From this, all players on the ISU Football team are from a total of 21 different states. The most being from Iowa.
+
+
+## Part 3: Joining Data Frames
+
+**1.** Find which states do the ISU players (both defensive and offensive) come from. Create an appropriate numerical or graphical summary.
+```{r}
+#Offense
+offState <- offClean %>%
+      distinct(Name) %>%
+      left_join(p_four, by = c("Name" = "Name"))
+
+offState %>%
+      group_by(State) %>% 
+      summarize(Players = n()) %>%
+      ggplot(aes(x = State, weight = Players)) + geom_bar() + coord_flip() +
+      ggtitle("Offense Players and States") + ylab("Number of Offense Players")
+```
+
+```{r}
+#Defense
+defState <- defClean %>%
+      distinct(Name) %>%
+      left_join(p_four, by = c("Name" = "Name"))
+
+defState %>%
+      group_by(State) %>% 
+      summarize(Players = n()) %>%
+      ggplot(aes(x = State, weight = Players)) + geom_bar() + coord_flip() +
+      ggtitle("Defense Players and States") + ylab("Number of Defense Players")
+```
+
+
+**2.** How does the performance of quarterback Brock Purdy relate to the performance of the ISU team?
+```{r}
+
+```
+
+
+**3.** Which ISU player(s) made the biggest progress over the last year? Compare the player-level statistics (i.e. averages and totals for each player) using both the 2020 and the 2019 data here. Choose for yourself the player statistics to investigate.
+```{r}
+
+```
