@@ -1,0 +1,215 @@
+---
+title: 'DS202: Lab 4'
+author: "MyTien Kien; kmytien, Tanner Dunn; tcdunn"
+date: "3/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE}
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+defense <-  read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2020.xlsx', sheet='Defensive')
+offense <-  read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2020.xlsx', sheet='Offensive')
+offense19 <-  read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2019.xlsx', sheet='Offensive')
+bio <-  read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2020.xlsx', sheet='Biography')
+```
+
+## Part 1: Cleaning
+```{r message=FALSE}
+#Factored and converted necessary columns to numeric for Defense and Offense
+defClean <- defense %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
+      mutate(across(3:11, as.numeric))
+
+offClean <- offense %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
+      mutate(across(3:12, as.numeric))
+
+#For Bio, I converted height into inches, as well as factored Name and turned Weight numeric
+bio <- bio %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Weight = as.numeric(Weight))
+
+bioClean <- bio %>%
+      separate(Height, into = c("Ft", "In"), convert = TRUE) %>%
+      mutate(Height = (Ft * 12) + In) %>%
+      select(-c(Ft:In))
+
+#Printing Structures
+str(defClean)
+str(offClean)
+str(bioClean)
+```
+
+For defClean & offClean, I converted the Name & Opponent so that it is factored, and everything else is numeric. For bioClean, I factored the Name as well as turned Weight numerical. For The Height in bioClean, I chose to convert the height into inches.
+
+
+## Part 2: Tidying
+**1.** Reformat the offClean data frame into a tidy format using pivot_longer. The type of statistic (Receiving_REC for the number of receiving, Receiving_YDS for receiving yards) is added as a new key column named stat.
+```{r message=FALSE}
+p_one <- offClean %>%
+      pivot_longer(c(3:12), names_to = "Stat", values_to = "Value")
+```
+
+
+**2.** Show on the distributions of the offensive statistics. The distribution of each offensive statistic should be shown in a separate facet. Explain the patterns you see.
+```{r message=FALSE}
+p_two <- p_one %>% 
+      ggplot(aes(x = Value)) + geom_histogram(bins = 30) + facet_wrap(~Stat, scales = 'free_y')
+
+p_two + ggtitle('Distributions of Offense Stats') + ylab("Count of Specific Offense Stat") + xlab("Frequency")
+```
+
+It looks like there are may variables in the Offense Statistics that consists of values below 10, such as Passing_INT, Passing_TD, Receiving_TD and so on. From most of these graphs, it looks like as we go up the x-value for a any specific offense stat/variable, the less likely we'll see someone achieve that number in that specific stat.
+
+
+**3.** Did ISU have better offense against Oregon or Oklahoma? Answer this question by creating a scatter plot with the x- and y-axes being the receiving yards of the ISU players against these two opponents. A large number of receiving yards indicates good offense.
+```{r message=FALSE}
+#Not sure if I did this correctly - possibly use pivot_longer?
+p_three <- p_one %>%
+         select(Opponent_Opponent, Stat, Value) %>%
+         filter(Opponent_Opponent == 'Oklahoma' | Opponent_Opponent == 'Oregon', Stat == 'Receiving_YDS') %>%
+         ggplot(aes(x = Value, y = Opponent_Opponent, color = Opponent_Opponent)) + geom_point(position = 'jitter') +
+         ggtitle("Receiving Yards vs Oklahoma/Oregon") + ylab("Opponent")
+
+p_three
+```
+
+From this graph, it looks like Iowa State's Offense did a lot better against Oklahoma than Oregon. There are some points against Oklahoma that are much higher than Oregon's. The Receiving_Yards go up to 114 for Oklahoma compared for Oregon's highest, ~55 yards.
+
+
+**4.** Separate the Hometown column into two columns, namely, the city and the state where the player comes from. Print the first few rows of these two columns. (Hint: look at the sep= argument of separate)
+```{r}
+p_four <- bioClean %>%
+      separate(Hometown, into = c('City', 'State'), sep = ',')
+
+head(select(p_four, Name, City, State))
+```
+
+
+**5.** How many players are there from each state?
+```{r}
+p_five <- p_four %>%
+      group_by(State) %>%
+      summarise(Players = n())
+
+p_five
+```
+
+From this, all players on the ISU Football team are from a total of 21 different states. The most being from Iowa.
+
+
+## Part 3: Joining Data Frames
+**1.** Find which states do the ISU players (both defensive and offensive) come from. Create an appropriate numerical or graphical summary.
+```{r}
+#Offense - 16 Players in Total
+offState <- offClean %>%
+      distinct(Name) %>%
+      left_join(p_four, by = c("Name" = "Name"))
+
+offState %>%
+      group_by(State) %>% 
+      summarize(Players = n()) %>%
+      ggplot(aes(x = State, weight = Players)) + geom_bar() + coord_flip() +
+      ggtitle("Offense Players and States") + ylab("Number of Offense Players")
+```
+
+```{r}
+#Defense - 37 Players in Total
+defState <- defClean %>%
+      distinct(Name) %>%
+      left_join(p_four, by = c("Name" = "Name"))
+
+defState %>%
+      group_by(State) %>% 
+      summarize(Players = n()) %>%
+      ggplot(aes(x = State, weight = Players)) + geom_bar() + coord_flip() +
+      ggtitle("Defense Players and States") + ylab("Number of Defense Players")
+```
+
+
+**2.** How does the performance of quarterback Brock Purdy relate to the performance of the ISU team?
+```{r}
+both <- left_join(offClean, defClean)
+
+brock <- both %>% 
+   filter(Name == 'Purdy, Brock') %>%
+   summarise(Pass_mean = mean(Passing_YDS), Rush_mean = mean(Rushing_YDS))
+
+team <- both %>%
+   filter(Name != 'Purdy, Brock') %>%
+   group_by(Name) %>%
+   summarise(Rec_mean = mean(Receiving_YDS, rm.na = TRUE), Rush_mean = mean(Rushing_YDS, rm.na = TRUE))
+
+brock
+team
+
+```
+Looking at Brock Purdy's performance in relation to his teammates you can see he averages around 238 passing Yards a game and the player who
+averages the largest portion of those yards is Xavier Hutchinson with 69.1. Also looking at his rushing yards Breece Hall is the only one on average
+out rushing him which makes sense as he is the star running back. 
+
+
+**3.** Which ISU player(s) made the biggest progress over the last year? Compare the player-level statistics (i.e. averages and totals for each player) using both the 2020 and the 2019 data here. Choose for yourself the player statistics to investigate.
+```{r}
+offense19 <-  read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2019.xlsx', sheet='Offensive')
+defense19 <- read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2019.xlsx', sheet='Defensive')
+
+defClean19 <- defense19 %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
+      mutate(across(3:11, as.numeric))
+
+offClean19 <- offense19 %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
+      mutate(across(3:12, as.numeric))
+
+defense <-  read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2020.xlsx', sheet='Defensive')
+offense <-  read_excel('C:\\Spring2021\\ds202\\lab4\\cyclonesFootball2020.xlsx', sheet='Offensive')
+
+
+defClean <- defense %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
+      mutate(across(3:11, as.numeric))
+
+offClean <- offense %>%
+      mutate(Name = factor(Name)) %>%
+      mutate(Opponent_Opponent = factor(Opponent_Opponent)) %>%
+      mutate(across(3:12, as.numeric))
+
+both20 <- left_join(defClean, offClean)
+both19 <- left_join(defClean19, offClean19)
+
+thisYear <- both20 %>%
+   group_by(Name) %>%
+   summarise(mean_Rec=mean(Receiving_YDS, rm.na = TRUE), mean_Rush = mean(Rushing_YDS, rm.na = TRUE), mean_Tackles = mean(Tackles_Solo, rm.na= TRUE),
+             tot_Rec=sum(Receiving_YDS, rm.na = TRUE), tot_Rush = sum(Rushing_YDS, rm.na = TRUE), tot_Tackles = sum(Tackles_Solo, rm.na= TRUE))
+
+lastYear <- both19 %>%
+   group_by(Name) %>%
+   summarise(mean_Rec=mean(Receiving_YDS, rm.na = TRUE), mean_Rush = mean(Rushing_YDS, rm.na = TRUE), mean_Tackles = mean(Tackles_Solo, rm.na= TRUE),
+             tot_Rec=sum(Receiving_YDS, rm.na = TRUE), tot_Rush = sum(Rushing_YDS, rm.na = TRUE), tot_Tackles = sum(Tackles_Solo, rm.na= TRUE))
+
+head(thisYear, 20)
+
+head(lastYear, 20)
+
+```
+
+Looking at these two tables there are a handful of players who made great improvement.
+Akers, Landen tripled his total receiving yards on the offensive side
+Jake, Hummel also had great improvement in his total tackels on the defensive side
+Lastly Breece Hall improved greatly in all categories. 
